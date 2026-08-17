@@ -159,7 +159,6 @@ export default function Home() {
               <li>Medication names, brands, classes, actions, uses, contraindications, doses, routes, and adverse effects</li>
               <li>Roles of EMS practitioners, ambulance types, medication routes, and every listed chapter term</li>
             </ul>
-            <p className="note">Dose questions follow the provided 2021 course medication sheet. Actual EMS protocols can differ by service and medical director.</p>
           </section>
         </div>
       )}
@@ -264,7 +263,6 @@ export default function Home() {
           <h1>Medication Sheet 1</h1>
           <p className="intro">Opioids, nonopioids, antagonists, sedatives, and related agents from the attached course sheet.</p>
           <div className="filters"><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search medications..." /></div>
-          <p className="note">For studying only. The values below reproduce the course sheet and are not a substitute for your current local protocol.</p>
           <div className="drug-list">
             {filteredDrugs.map((drug) => (
               <details key={drug.generic}>
