@@ -183,7 +183,7 @@ export default function Home() {
                 const isWrong = answered && option === selected && option !== questions[current].answer;
                 return (
                   <button key={option} onClick={() => chooseAnswer(option)} disabled={answered} className={`${isCorrect ? "correct" : ""} ${isWrong ? "wrong" : ""}`}>
-                    <span>{index + 1}</span>{option}
+                    <span>{String.fromCharCode(65 + index)}</span>{option}
                   </button>
                 );
               })}
