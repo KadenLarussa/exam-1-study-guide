@@ -91,12 +91,12 @@ export const medMathQuestions: MedMathQuestion[] = [
   {
     id: "drip-large-bag",
     type: "Drip rate",
-    prompt: (minutes) => `A 1,000 mL bag is to infuse over ${minutes} minutes using 15 gtt/mL tubing. Round to the nearest whole drop: what is the drip rate in gtt/min?`,
-    answer: (minutes) => Math.round((1000 * 15) / minutes),
+    prompt: (minutes) => `A 1,000 mL bag is to infuse over ${minutes} minutes using 10 gtt/mL tubing. Round to the nearest whole drop: what is the drip rate in gtt/min?`,
+    answer: (minutes) => Math.round((1000 * 10) / minutes),
     unit: "gtt/min",
     hint: "Use the gravity-drip formula and make sure the time stays in minutes, not hours.",
     equation: ["volume", "×", "drop factor", "÷", "time in minutes", "=", "gtt/min"],
-    formula: (minutes) => `(1,000 mL × 15 gtt/mL) ÷ ${minutes} min = ${Math.round((1000 * 15) / minutes)} gtt/min.`,
+    formula: (minutes) => `(1,000 mL × 10 gtt/mL) ÷ ${minutes} min = ${Math.round((1000 * 10) / minutes)} gtt/min.`,
     randomTimes: [45, 60],
   },
 ];
