@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { ActiveMathQuestion, buildMedMathSet } from "./medMathData";
 import { allQuestions, chapterNames, drugCards, Question, studyTerms } from "./studyData";
 
-type View = "setup" | "quiz" | "glossary" | "drugs";
+type View = "setup" | "quiz" | "glossary" | "drugs" | "medmath";
 type Weights = { pharm: number; research: number; foundation: number };
 
 const shuffle = <T,>(items: T[]) => {
@@ -62,6 +63,12 @@ export default function Home() {
   const [answers, setAnswers] = useState<{ question: Question; selected: string; correct: boolean }[]>([]);
   const [search, setSearch] = useState("");
   const [chapterFilter, setChapterFilter] = useState("all");
+  const [mathQuestions, setMathQuestions] = useState<ActiveMathQuestion[]>(() => buildMedMathSet(false));
+  const [mathAnswers, setMathAnswers] = useState<Record<string, string>>({});
+  const [mathChecked, setMathChecked] = useState<Record<string, boolean>>({});
+  const [mathHints, setMathHints] = useState<Record<string, boolean>>({});
+  const [formulaWork, setFormulaWork] = useState<Record<string, string[]>>({});
+  const [formulaChecked, setFormulaChecked] = useState<Record<string, boolean>>({});
   const effective = effectiveWeights(weights);
 
   const startQuiz = () => {
@@ -105,6 +112,26 @@ export default function Home() {
     setChapterFilter("all");
   };
 
+  const makeMathSet = (randomTimes: boolean) => {
+    setMathQuestions(buildMedMathSet(randomTimes));
+    setMathAnswers({});
+    setMathChecked({});
+    setMathHints({});
+    setFormulaWork({});
+    setFormulaChecked({});
+  };
+
+  const checkMathAnswer = (question: ActiveMathQuestion) => {
+    if (mathAnswers[question.id]?.trim()) setMathChecked((old) => ({ ...old, [question.id]: true }));
+  };
+
+  const addFormulaPiece = (questionId: string, piece: string) => {
+    setFormulaWork((old) => old[questionId]?.includes(piece) ? old : { ...old, [questionId]: [...(old[questionId] ?? []), piece] });
+    setFormulaChecked((old) => ({ ...old, [questionId]: false }));
+  };
+
+  const checkFormula = (question: ActiveMathQuestion) => setFormulaChecked((old) => ({ ...old, [question.id]: true }));
+
   const score = answers.filter((answer) => answer.correct).length;
   const finished = view === "quiz" && questions.length > 0 && current >= questions.length;
 
@@ -116,6 +143,7 @@ export default function Home() {
           <button onClick={() => resetTo("setup")} className={view === "setup" ? "active" : ""}>New test</button>
           <button onClick={() => resetTo("glossary")} className={view === "glossary" ? "active" : ""}>Key terms</button>
           <button onClick={() => resetTo("drugs")} className={view === "drugs" ? "active" : ""}>Medication sheet</button>
+          <button onClick={() => resetTo("medmath")} className={view === "medmath" ? "active" : ""}>Med math</button>
         </nav>
       </header>
 
@@ -278,6 +306,68 @@ export default function Home() {
                 </div>
               </details>
             ))}
+          </div>
+        </div>
+      )}
+
+      {view === "medmath" && (
+        <div className="container math-page">
+          <h1>Med math practice</h1>
+          <p className="intro">Static dosage, pump, and gravity-drip calculations. New sets start with one-hour hangs; the random-time button uses 30, 45, or 60 minutes where the calculation involves a time.</p>
+          <div className="math-actions">
+            <button className="primary-button" onClick={() => makeMathSet(false)}>New 1-hour set</button>
+            <button className="secondary-button" onClick={() => makeMathSet(true)}>Random EMS times</button>
+          </div>
+          <div className="math-legend"><span>IV push</span><span>Pump rate</span><span>Drip rate</span></div>
+          <div className="math-list">
+            {mathQuestions.map((question, index) => {
+              const submitted = mathChecked[question.id];
+              const entered = Number(mathAnswers[question.id]);
+              const correct = submitted && Number.isFinite(entered) && Math.abs(entered - question.answer(question.minutes)) < 0.06;
+              const builtFormula = formulaWork[question.id] ?? [];
+              const formulaCorrect = builtFormula.length === question.equation.length && builtFormula.every((piece, pieceIndex) => piece === question.equation[pieceIndex]);
+              return (
+                <article className="math-card" key={question.id}>
+                  <div className="math-heading"><span>#{index + 1} · {question.type}</span><span>Answer in {question.unit}</span></div>
+                  <h2>{question.prompt(question.minutes)}</h2>
+                  <div className="formula-builder">
+                    <div className="formula-bank">
+                      <b>Formula pieces</b>
+                      <p>Drag or tap each piece to build the setup.</p>
+                      <div className="formula-pieces">
+                        {question.formulaPieces.filter((piece) => !builtFormula.includes(piece)).map((piece) => <button key={piece} draggable onDragStart={(event) => event.dataTransfer.setData("text/plain", piece)} onClick={() => addFormulaPiece(question.id, piece)}>{piece}</button>)}
+                      </div>
+                    </div>
+                    <div className="formula-workspace" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); addFormulaPiece(question.id, event.dataTransfer.getData("text/plain")); }}>
+                      <b>Equation workspace</b>
+                      <div className="equation-line">
+                        {builtFormula.length ? builtFormula.map((piece) => <button key={piece} title="Remove piece" onClick={() => { setFormulaWork((old) => ({ ...old, [question.id]: (old[question.id] ?? []).filter((item) => item !== piece) })); setFormulaChecked((old) => ({ ...old, [question.id]: false })); }}>{piece}</button>) : <span>Drop formula pieces here</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="formula-actions">
+                    <button className="secondary-button" disabled={!builtFormula.length} onClick={() => checkFormula(question)}>Check setup</button>
+                    {builtFormula.length > 0 && <button className="text-button" onClick={() => { setFormulaWork((old) => ({ ...old, [question.id]: [] })); setFormulaChecked((old) => ({ ...old, [question.id]: false })); }}>Clear setup</button>}
+                  </div>
+                  {formulaChecked[question.id] && <p className={`formula-result ${formulaCorrect ? "formula-right" : "formula-wrong"}`}>{formulaCorrect ? "Formula setup looks right. Now plug in the numbers." : "Not quite. Check the units and which quantity should be divided by time or concentration."}</p>}
+                  <div className="math-answer-row">
+                    <label>
+                      <span>Your answer</span>
+                      <input inputMode="decimal" type="number" step="any" value={mathAnswers[question.id] ?? ""} disabled={submitted} onChange={(event) => setMathAnswers((old) => ({ ...old, [question.id]: event.target.value }))} placeholder="0" />
+                    </label>
+                    <b>{question.unit}</b>
+                    {!submitted && <button className="primary-button" onClick={() => checkMathAnswer(question)}>Check</button>}
+                  </div>
+                  {!submitted && <button className="text-button" onClick={() => setMathHints((old) => ({ ...old, [question.id]: !old[question.id] }))}>{mathHints[question.id] ? "Hide hint" : "Show hint"}</button>}
+                  {!submitted && mathHints[question.id] && <p className="hint"><b>Hint:</b> {question.hint}</p>}
+                  {submitted && <div className={`math-feedback ${correct ? "right-feedback" : "wrong-feedback"}`}>
+                    <h3>{correct ? "Correct" : "Not quite"}</h3>
+                    {!correct && <p><b>Correct answer:</b> {question.answer(question.minutes)} {question.unit}</p>}
+                    <p>{question.formula(question.minutes)}</p>
+                  </div>}
+                </article>
+              );
+            })}
           </div>
         </div>
       )}

@@ -86,6 +86,38 @@ input[type="range"] { width:100%; accent-color:var(--blue); }
 .drug-grid { border-top:1px solid var(--border); padding:16px; display:grid; grid-template-columns:1fr 1fr; gap:18px; }
 .drug-grid b { font-size:13px; }
 .drug-grid p { margin:4px 0 0; line-height:1.45; color:#b4bac5; }
+.math-page { max-width:800px; }
+.math-actions { display:flex; gap:10px; flex-wrap:wrap; margin:0 0 17px; }
+.math-legend { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+.math-legend span,.math-heading span { border:1px solid var(--border); background:var(--panel-2); color:var(--muted); padding:4px 7px; border-radius:3px; font-size:12px; }
+.math-list { display:grid; gap:14px; }
+.math-card { background:var(--panel); border:1px solid var(--border); border-radius:6px; overflow:hidden; padding:20px; }
+.math-heading { display:flex; justify-content:space-between; gap:10px; margin-bottom:15px; }
+.math-card h2 { font-size:18px; line-height:1.45; margin-bottom:18px; }
+.formula-builder { display:grid; grid-template-columns:1fr 1.2fr; border:1px solid var(--border); background:#161920; margin:0 0 13px; }
+.formula-bank,.formula-workspace { padding:14px; }
+.formula-bank { border-right:1px solid var(--border); }
+.formula-builder b { font-size:13px; }
+.formula-builder p { font-size:12px; color:var(--muted); line-height:1.4; margin:5px 0 10px; }
+.formula-pieces { display:flex; gap:6px; flex-wrap:wrap; }
+.formula-pieces button,.equation-line button { border:1px solid #4d5b70; background:#242b37; color:var(--text); border-radius:3px; padding:5px 7px; font-size:12px; }
+.formula-pieces button:hover { border-color:var(--blue); }
+.equation-line { min-height:72px; margin-top:10px; padding:9px; display:flex; gap:6px; flex-wrap:wrap; align-content:flex-start; border:1px dashed #536171; background:var(--panel); }
+.equation-line span { color:var(--muted); font-size:13px; padding:5px; }
+.equation-line button { background:#172e4f; border-color:#3b82f6; }
+.formula-actions { display:flex; align-items:center; gap:14px; margin:0 0 14px; }
+.formula-actions .secondary-button { padding:8px 11px; font-size:13px; }
+.formula-actions .secondary-button:disabled { opacity:.45; cursor:not-allowed; }
+.formula-result { margin:0 0 14px; padding:9px 11px; border-left:3px solid; font-size:14px; line-height:1.4; }
+.formula-right { background:#17233a; border-color:var(--blue); }
+.formula-wrong { background:#301a1e; border-color:var(--red); }
+.math-answer-row { display:flex; align-items:end; gap:10px; flex-wrap:wrap; }
+.math-answer-row label { display:grid; gap:5px; font-size:13px; color:var(--muted); }
+.math-answer-row input { width:150px; min-height:42px; padding:8px 10px; border:1px solid #596170; border-radius:4px; background:var(--panel-2); color:var(--text); }
+.math-answer-row>b { padding:12px 0; color:var(--muted); }
+.math-card>.text-button { margin-top:16px; }
+.math-feedback { margin:17px -20px -20px; padding:17px 20px; border-top:1px solid var(--border); }
+.math-feedback h3,.math-feedback p { margin:0 0 8px; }
 @media (max-width:650px) {
   .header { align-items:flex-start; flex-direction:column; gap:3px; }
   nav { width:100%; overflow:auto; flex-wrap:nowrap; }
@@ -103,4 +135,9 @@ input[type="range"] { width:100%; accent-color:var(--blue); }
   .filters { flex-direction:column; }
   .drug-list summary { flex-direction:column; }
   .drug-grid { grid-template-columns:1fr; }
+  .math-card { padding:17px; }
+  .math-heading { flex-direction:column; align-items:flex-start; }
+  .formula-builder { grid-template-columns:1fr; }
+  .formula-bank { border-right:0; border-bottom:1px solid var(--border); }
+  .math-feedback { margin-left:-17px; margin-right:-17px; margin-bottom:-17px; padding:17px; }
 }
