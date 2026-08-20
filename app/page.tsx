@@ -412,7 +412,7 @@ export default function Home() {
           <div className="review-intro">
             <span>STUDY GUIDE REVIEW</span>
             <h1>Pharm Exam 1</h1>
-            <p>This is separate from the regular practice test. It uses the photographed review sheets: medication sources and rights, pharmacology, terminology, receptors, controlled schedules, Medication Sheet 1, EMS history, ambulance types, routes, and the Chapter 1 test questions.</p>
+            <p>Everything from the study guide in one place. Pick how many questions you want and start.</p>
           </div>
           <section className="card review-card review-setup">
             <h2>Make a study-guide review</h2>
