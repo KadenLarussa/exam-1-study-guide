@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { examReviewQuestions, ReviewQuestion } from "./examReviewData";
 import { ActiveMathQuestion, buildMedMathSet } from "./medMathData";
 import { allQuestions, chapterNames, drugCards, Question, studyTerms } from "./studyData";
 
-type View = "setup" | "quiz" | "glossary" | "drugs" | "medmath";
+type View = "setup" | "quiz" | "glossary" | "drugs" | "medmath" | "review";
 type Weights = { pharm: number; research: number; foundation: number };
 
 const shuffle = <T,>(items: T[]) => {
@@ -52,6 +53,10 @@ const buildQuiz = (count: number, weights: Weights) => {
   return shuffle(chosen).map((q) => ({ ...q, options: shuffle(q.options) }));
 };
 
+const buildReview = (count: number) => shuffle(examReviewQuestions)
+  .slice(0, Math.min(count, examReviewQuestions.length))
+  .map((question) => ({ ...question, options: shuffle(question.options) }));
+
 export default function Home() {
   const [view, setView] = useState<View>("setup");
   const [questionCount, setQuestionCount] = useState(50);
@@ -69,6 +74,11 @@ export default function Home() {
   const [mathHints, setMathHints] = useState<Record<string, boolean>>({});
   const [formulaWork, setFormulaWork] = useState<Record<string, string[]>>({});
   const [formulaChecked, setFormulaChecked] = useState<Record<string, boolean>>({});
+  const [reviewQuestions, setReviewQuestions] = useState<ReviewQuestion[]>([]);
+  const [reviewCurrent, setReviewCurrent] = useState(0);
+  const [reviewSelected, setReviewSelected] = useState<string | null>(null);
+  const [reviewHintOpen, setReviewHintOpen] = useState(false);
+  const [reviewAnswers, setReviewAnswers] = useState<{ question: ReviewQuestion; selected: string; correct: boolean }[]>([]);
   const effective = effectiveWeights(weights);
 
   const startQuiz = () => {
@@ -132,8 +142,32 @@ export default function Home() {
 
   const checkFormula = (question: ActiveMathQuestion) => setFormulaChecked((old) => ({ ...old, [question.id]: true }));
 
+  const startReview = (count: number) => {
+    setReviewQuestions(buildReview(count));
+    setReviewCurrent(0);
+    setReviewSelected(null);
+    setReviewHintOpen(false);
+    setReviewAnswers([]);
+    setView("review");
+  };
+
+  const chooseReviewAnswer = (option: string) => {
+    if (reviewSelected || !reviewQuestions[reviewCurrent]) return;
+    const question = reviewQuestions[reviewCurrent];
+    setReviewSelected(option);
+    setReviewAnswers((old) => [...old, { question, selected: option, correct: option === question.answer }]);
+  };
+
+  const nextReviewQuestion = () => {
+    setReviewCurrent((old) => old + 1);
+    setReviewSelected(null);
+    setReviewHintOpen(false);
+  };
+
   const score = answers.filter((answer) => answer.correct).length;
   const finished = view === "quiz" && questions.length > 0 && current >= questions.length;
+  const reviewFinished = view === "review" && reviewQuestions.length > 0 && reviewCurrent >= reviewQuestions.length;
+  const reviewScore = reviewAnswers.filter((answer) => answer.correct).length;
 
   return (
     <main>
@@ -144,6 +178,7 @@ export default function Home() {
           <button onClick={() => resetTo("glossary")} className={view === "glossary" ? "active" : ""}>Key terms</button>
           <button onClick={() => resetTo("drugs")} className={view === "drugs" ? "active" : ""}>Medication sheet</button>
           <button onClick={() => resetTo("medmath")} className={view === "medmath" ? "active" : ""}>Med math</button>
+          <button onClick={() => resetTo("review")} className={`review-tab ${view === "review" ? "active" : ""}`}>Exam review</button>
         </nav>
       </header>
 
@@ -369,6 +404,74 @@ export default function Home() {
               );
             })}
           </div>
+        </div>
+      )}
+
+      {view === "review" && reviewQuestions.length === 0 && (
+        <div className="container review-page">
+          <div className="review-intro">
+            <span>STUDY GUIDE REVIEW</span>
+            <h1>Pharm Exam 1</h1>
+            <p>This is separate from the regular practice test. It uses the photographed review sheets: medication sources and rights, pharmacology, terminology, receptors, controlled schedules, Medication Sheet 1, EMS history, ambulance types, routes, and the Chapter 1 test questions.</p>
+          </div>
+          <section className="card review-card review-setup">
+            <h2>Make a study-guide review</h2>
+            <p>Every attempt randomizes question order and answer choices. Incorrect answers immediately show the answer and the specific study-guide explanation.</p>
+            <div className="review-counts">
+              {[10, 25, 50, examReviewQuestions.length].map((count) => <button key={count} onClick={() => startReview(count)}>{count === examReviewQuestions.length ? `All ${count} questions` : `${count} questions`}</button>)}
+            </div>
+            <details className="review-coverage">
+              <summary>What this review covers</summary>
+              <ul>
+                <li>Medication sources, eight rights, receptor terms, PK/PD, transport, metabolism, and terminology</li>
+                <li>Alpha-1, alpha-2, beta-1, and beta-2 locations and effects; Schedules I-V</li>
+                <li>Versed, fentanyl, ketamine, Narcan, etomidate, and Toradol</li>
+                <li>EMS roles, ambulance types, medication routes, EMS history, and every readable Chapter 1 question shown</li>
+              </ul>
+            </details>
+          </section>
+        </div>
+      )}
+
+      {view === "review" && !reviewFinished && reviewQuestions[reviewCurrent] && (
+        <div className="container quiz-page review-page">
+          <div className="quiz-topline">
+            <button className="text-button review-text-button" onClick={() => { setReviewQuestions([]); resetTo("review"); }}>← Change review length</button>
+            <span>Score: {reviewScore}/{reviewAnswers.length}</span>
+          </div>
+          <div className="progress review-progress"><span style={{ width: `${(reviewCurrent / reviewQuestions.length) * 100}%` }} /></div>
+          <section className="card question-card review-question-card">
+            <div className="question-info"><span>Study guide question {reviewCurrent + 1} of {reviewQuestions.length}</span><span>{reviewQuestions[reviewCurrent].topic}</span></div>
+            <h2>{reviewQuestions[reviewCurrent].prompt}</h2>
+            <div className="options">
+              {reviewQuestions[reviewCurrent].options.map((option, index) => {
+                const answered = Boolean(reviewSelected);
+                const isCorrect = answered && option === reviewQuestions[reviewCurrent].answer;
+                const isWrong = answered && option === reviewSelected && option !== reviewQuestions[reviewCurrent].answer;
+                return <button key={option} onClick={() => chooseReviewAnswer(option)} disabled={answered} className={`${isCorrect ? "correct" : ""} ${isWrong ? "wrong" : ""}`}><span>{String.fromCharCode(65 + index)}</span>{option}</button>;
+              })}
+            </div>
+            {!reviewSelected && <div className="question-actions"><button className="secondary-button review-secondary" onClick={() => setReviewHintOpen(!reviewHintOpen)}>{reviewHintOpen ? "Hide hint" : "Show hint"}</button>{reviewHintOpen && <p className="hint review-hint"><b>Hint:</b> {reviewQuestions[reviewCurrent].hint}</p>}</div>}
+            {reviewSelected && <div className={`feedback ${reviewSelected === reviewQuestions[reviewCurrent].answer ? "right-feedback" : "wrong-feedback"}`}>
+              <h3>{reviewSelected === reviewQuestions[reviewCurrent].answer ? "Correct" : "Not quite"}</h3>
+              {reviewSelected !== reviewQuestions[reviewCurrent].answer && <p><b>Correct answer:</b> {reviewQuestions[reviewCurrent].answer}</p>}
+              <p>{reviewQuestions[reviewCurrent].explanation}</p>
+              <button className="primary-button review-primary" onClick={nextReviewQuestion}>{reviewCurrent === reviewQuestions.length - 1 ? "See results" : "Next question"}</button>
+            </div>}
+          </section>
+        </div>
+      )}
+
+      {reviewFinished && (
+        <div className="container results-page review-page">
+          <section className="card results-card review-card">
+            <span className="review-finished-label">STUDY GUIDE REVIEW COMPLETE</span>
+            <h1>Finished</h1>
+            <div className="big-score review-score">{Math.round((reviewScore / reviewQuestions.length) * 100)}%</div>
+            <p>You got {reviewScore} out of {reviewQuestions.length} correct.</p>
+            <div className="result-buttons"><button className="primary-button review-primary" onClick={() => startReview(reviewQuestions.length)}>Retake with new order</button><button className="secondary-button review-secondary" onClick={() => { setReviewQuestions([]); resetTo("review"); }}>Change review length</button></div>
+          </section>
+          {reviewAnswers.some((answer) => !answer.correct) && <section className="plain-section review-section"><h2>Questions to review</h2>{reviewAnswers.filter((answer) => !answer.correct).map((answer, index) => <details key={`${answer.question.id}-${index}`}><summary>{answer.question.prompt}</summary><p><b>Your answer:</b> {answer.selected}</p><p><b>Correct answer:</b> {answer.question.answer}</p><p>{answer.question.explanation}</p></details>)}</section>}
         </div>
       )}
     </main>
